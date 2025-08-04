@@ -1,27 +1,37 @@
-name: Deploy Horilla
+name: Deploy Horilla to EC2
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]  # Change if you're deploying from a different branch
 
 jobs:
   deploy:
+    name: Deploy to EC2 Instance
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup SSH
+      - name: 🔐 Setup SSH Agent
         uses: webfactory/ssh-agent@v0.5.4
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Deploy to EC2
+      - name: 🚀 Deploy to EC2 via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@<EC2-IP> << 'EOF'
-            cd horilla
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_IP }} << 'EOF'
+            set -e
+            cd ~/Horilla_Demo
+
+            echo "📦 Pulling latest changes..."
             git pull origin main
+
+            echo "🛑 Stopping old containers..."
             docker-compose down
+
+            echo "🔄 Building and starting services..."
             docker-compose up -d --build
+
+            echo "✅ Deployment complete!"
           EOF
